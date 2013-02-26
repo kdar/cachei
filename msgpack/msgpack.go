@@ -5,15 +5,15 @@ import (
   "github.com/vmihailenco/msgpack"
 )
 
-type MsgPack struct{}
+type Coder struct{}
 
-func (m *MsgPack) Marshal(v interface{}) ([]byte, error) {
+func (c *Coder) Marshal(v interface{}) ([]byte, error) {
   buf := &bytes.Buffer{}
   err := msgpack.NewEncoder(buf).Encode(v)
   return buf.Bytes(), err
 }
 
-func (m *MsgPack) Unmarshal(data []byte, v interface{}) error {
+func (c *Coder) Unmarshal(data []byte, v interface{}) error {
   buf := bytes.NewBuffer(data)
   dec := msgpack.NewDecoder(buf)
 

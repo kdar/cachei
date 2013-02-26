@@ -20,13 +20,13 @@ func (s *Source) Open() error {
   return nil
 }
 
-func (s *Source) Into(key string, expires int, ret interface{}, f cache.CacheFunc) (error, error) {
+func (s *Source) OutSetFn(key string, expires int, ret interface{}, f cache.CacheFunc) (error, error) {
   val := reflect.ValueOf(ret)
-  if val.Type().Kind() != reflect.Ptr {
+  if val.Kind() != reflect.Ptr {
     return nil, errors.New("ret must be a pointer")
   }
 
-  fret, ferr, cerr := s.Get(key, expires, f)
+  fret, ferr, cerr := s.GetSetFn(key, expires, f)
   if fret != nil {
     val.Elem().Set(reflect.ValueOf(fret))
   }
@@ -34,9 +34,21 @@ func (s *Source) Into(key string, expires int, ret interface{}, f cache.CacheFun
   return ferr, cerr
 }
 
-func (s *Source) Get(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
+func (s *Source) GetSetFn(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
   fret, ferr := f()
   return fret, ferr, nil
+}
+
+func (s *Source) Out(key string, out interface{}) error {
+  return nil
+}
+
+func (s *Source) Get(key string) (interface{}, error) {
+  return nil, errors.New("could not find cache")
+}
+
+func (s *Source) Set(key string, value interface{}, expires int) error {
+  return nil
 }
 
 func (s *Source) Delete(key string) error {

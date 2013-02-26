@@ -32,53 +32,114 @@ func (s *Source) Open() (err error) {
   return
 }
 
-func (s *Source) Get(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
-  if v, err := redis.Bytes(s.conn.Do("GET", key)); err != redis.ErrNil {
-    var ret interface{}
-    err = s.config.Coder.Unmarshal(v, &ret)
-    if err != nil {
-      return nil, nil, err
-    }
+func (s *Source) GetSetFn(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
+  // v, err := redis.Bytes(s.conn.Do("GET", key))
+  // if err != redis.ErrNil || err == nil {
+  //   var ret interface{}
+  //   err = s.config.Coder.Unmarshal(v, &ret)
+  //   if err != nil {
+  //     return nil, nil, err
+  //   }
 
-    return ret, nil, nil
-  } else {
+  //   return ret, nil, nil
+  // } else if err == redis.ErrNil {
+  //   if f != nil {
+  //     fret, rerr := f()
+
+  //     if fret != nil {
+  //       b, err := s.config.Coder.Marshal(fret)
+  //       if err != nil {
+  //         return nil, rerr, err
+  //       }
+
+  //       err = s.Set(key, string(b), expires)
+  //       if err != nil {
+  //         return nil, rerr, err
+  //       }
+  //     }
+
+  //     return fret, rerr, rerr
+  //   }
+  // }
+
+  // return nil, nil, err
+
+  var i interface{}
+  ferr, cerr := s.OutSetFn(key, expires, &i, f)
+  return i, ferr, cerr
+}
+
+func (s *Source) OutSetFn(key string, expires int, out interface{}, f cache.CacheFunc) (error, error) {
+  if reflect.TypeOf(out).Kind() != reflect.Ptr {
+    return nil, errors.New("out must be a pointer")
+  }
+
+  shouldSet := false
+  v, err := redis.Bytes(s.conn.Do("GET", key))
+  if err != redis.ErrNil || err == nil {
+    err = s.config.Coder.Unmarshal(v, &out)
+    if err != nil {
+      fmt.Println(err)
+      shouldSet = true
+    } else {
+      return nil, nil
+    }
+  }
+
+  if shouldSet || err == redis.ErrNil {
     if f != nil {
       fret, rerr := f()
 
       if fret != nil {
-        b, err := s.config.Coder.Marshal(fret)
+        err = s.Set(key, fret, expires)
         if err != nil {
-          return nil, rerr, err
-        }
-
-        s.conn.Send("MULTI")
-        s.conn.Send("SET", key, string(b))
-        s.conn.Send("EXPIRE", key, expires)
-        _, err = s.conn.Do("EXEC")
-        if err != nil {
-          return nil, rerr, err
+          return rerr, err
         }
       }
 
-      return fret, rerr, rerr
+      return rerr, rerr
     }
   }
 
-  return nil, nil, nil
+  return nil, err
 }
 
-func (s *Source) Into(key string, expires int, ret interface{}, f cache.CacheFunc) (error, error) {
-  val := reflect.ValueOf(ret)
-  if val.Type().Kind() != reflect.Ptr {
-    return nil, errors.New("ret must be a pointer")
+func (s *Source) Get(key string) (interface{}, error) {
+  var i interface{}
+  err := s.Out(key, &i)
+  return i, err
+}
+
+func (s *Source) Out(key string, out interface{}) error {
+  if reflect.TypeOf(out).Kind() != reflect.Ptr {
+    return errors.New("out must be a pointer")
   }
 
-  fret, ferr, cerr := s.Get(key, expires, f)
-  if fret != nil {
-    val.Elem().Set(reflect.ValueOf(fret))
+  v, err := redis.Bytes(s.conn.Do("GET", key))
+  if err == nil || err != redis.ErrNil {
+    err = s.config.Coder.Unmarshal(v, &out)
+    if err != nil {
+      return err
+    }
+
+    return nil
   }
 
-  return ferr, cerr
+  return errors.New("could not find cache")
+}
+
+func (s *Source) Set(key string, value interface{}, expires int) error {
+  b, err := s.config.Coder.Marshal(value)
+  if err != nil {
+    return err
+  }
+
+  s.conn.Send("MULTI")
+  s.conn.Send("SET", key, string(b))
+  s.conn.Send("EXPIRE", key, expires)
+  _, err = s.conn.Do("EXEC")
+
+  return err
 }
 
 func (s *Source) Delete(key string) error {
