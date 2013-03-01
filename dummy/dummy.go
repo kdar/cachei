@@ -2,17 +2,17 @@ package dummy
 
 import (
   "errors"
-  "github.com/kdar/cache"
+  "github.com/kdar/cachei"
   "reflect"
 )
 
 func init() {
-  cache.Register("dummy", &Source{})
+  cachei.Register("dummy", &Source{})
 }
 
 type Source struct{}
 
-func (s *Source) Setup(config cache.DataSource) error {
+func (s *Source) Setup(config cachei.DataSource) error {
   return nil
 }
 
@@ -20,21 +20,22 @@ func (s *Source) Open() error {
   return nil
 }
 
-func (s *Source) OutSetFn(key string, expires int, ret interface{}, f cache.CacheFunc) (error, error) {
-  val := reflect.ValueOf(ret)
-  if val.Kind() != reflect.Ptr {
-    return nil, errors.New("ret must be a pointer")
+func (s *Source) OutSetFn(key string, expires int, out interface{}, f cachei.CacheFunc) (error, error) {
+  outval := reflect.ValueOf(out)
+  if outval.Kind() != reflect.Ptr {
+    return nil, errors.New("out must be a pointer")
   }
 
   fret, ferr, cerr := s.GetSetFn(key, expires, f)
   if fret != nil {
-    val.Elem().Set(reflect.ValueOf(fret))
+    fval := reflect.ValueOf(fret)
+    outval.Elem().Set(fval)
   }
 
   return ferr, cerr
 }
 
-func (s *Source) GetSetFn(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
+func (s *Source) GetSetFn(key string, expires int, f cachei.CacheFunc) (interface{}, error, error) {
   fret, ferr := f()
   return fret, ferr, nil
 }

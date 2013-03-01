@@ -6,7 +6,7 @@ import (
   "encoding/json"
   "fmt"
   "github.com/garyburd/redigo/redis"
-  kmsgpack "github.com/kdar/cache/msgpack"
+  kmsgpack "github.com/kdar/cachei/msgpack"
   "github.com/vmihailenco/msgpack"
   "testing"
   "time"
@@ -54,7 +54,7 @@ func msgpackm(c redis.Conn, m map[string]interface{}) {
 }
 
 func kmsgpackm(c redis.Conn, m map[string]interface{}) {
-  mp := &kmsgpack.MsgPack{}
+  mp := &kmsgpack.Coder{}
 
   b, err := mp.Marshal(m)
   if err != nil {

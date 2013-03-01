@@ -1,4 +1,4 @@
-cache
------
+cachei
+-----_
 
-A generic cache for Go (golang) that has multiple backends for caching servers and encodings.
+A generic cache interface for Go (golang) that has multiple backends for caching servers and encodings.

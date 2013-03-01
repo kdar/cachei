@@ -3,7 +3,7 @@ package redis
 import (
   "fmt"
   "github.com/davecgh/go-spew/spew"
-  kcache "github.com/kdar/cache"
+  "github.com/kdar/cachei"
   "reflect"
   "testing"
 
@@ -37,9 +37,10 @@ var cacheTests = []struct {
 // }
 
 func TestInto(t *testing.T) {
-  cache, err := kcache.Open("redis", kcache.DataSource{})
+  cache, err := cachei.Open("redis", cachei.DataSource{})
   if err != nil {
     t.Fatal(err)
+
   }
 
   for i, tt := range cacheTests {
@@ -49,7 +50,7 @@ func TestInto(t *testing.T) {
       return tt.value, nil
     }
 
-    verr, cerr := cache.Into(fmt.Sprintf("__kdarcacheinto_redis_test_%d", i), 1, &tt.into, missFunc)
+    verr, cerr := cache.OutSetFn(fmt.Sprintf("__kdarcacheinto_redis_test_%d", i), 1, tt.into, missFunc)
     if verr != nil {
       t.Fatal(verr)
     }
@@ -62,13 +63,13 @@ func TestInto(t *testing.T) {
       t.Fatalf("%d-1. Expected a cache miss, but instead found cache", i)
     }
 
-    if !reflect.DeepEqual(tt.value, tt.into) {
-      t.Fatalf("%d-1. Expected: %s, got: %s", i, spew.Sprintf("%#v", tt.value), spew.Sprintf("%#v", tt.into))
+    if !reflect.DeepEqual(tt.value, reflect.ValueOf(tt.into).Elem().Interface()) {
+      t.Fatalf("%d-1. Expected:\n%s,\ngot:\n%s", i, spew.Sprintf("%#v", &tt.value), spew.Sprintf("%#v", tt.into))
     }
 
     cacheMiss = false
 
-    verr, cerr = cache.Into(fmt.Sprintf("__kdarcacheinto_redis_test_%d", i), 1, &tt.into, missFunc)
+    verr, cerr = cache.OutSetFn(fmt.Sprintf("__kdarcacheinto_redis_test_%d", i), 1, tt.into, missFunc)
     if verr != nil {
       t.Fatal(verr)
     }
@@ -81,14 +82,14 @@ func TestInto(t *testing.T) {
       t.Fatalf("%d-2. Expected cache, but instead got a cache miss.", i)
     }
 
-    if !reflect.DeepEqual(tt.value, tt.into) {
+    if !reflect.DeepEqual(tt.value, reflect.ValueOf(tt.into).Elem().Interface()) {
       t.Fatalf("%d-2. Expected: %s, got: %s", i, spew.Sprintf("%#v", tt.value), spew.Sprintf("%#v", tt.into))
     }
   }
 }
 
 func TestGet(t *testing.T) {
-  cache, err := kcache.Open("redis", kcache.DataSource{})
+  cache, err := cachei.Open("redis", cachei.DataSource{})
   if err != nil {
     t.Fatal(err)
   }
@@ -100,7 +101,7 @@ func TestGet(t *testing.T) {
       return tt.value, nil
     }
 
-    v1, verr, cerr := cache.Get(fmt.Sprintf("__kdarcacheget_redis_test_%d", i), 1, missFunc)
+    v1, verr, cerr := cache.GetSetFn(fmt.Sprintf("__kdarcacheget_redis_test_%d", i), 1, missFunc)
     if verr != nil {
       t.Fatal(verr)
     }
@@ -119,7 +120,7 @@ func TestGet(t *testing.T) {
 
     cacheMiss = false
 
-    v2, verr, cerr := cache.Get(fmt.Sprintf("__kdarcacheget_redis_test_%d", i), 1, missFunc)
+    v2, verr, cerr := cache.GetSetFn(fmt.Sprintf("__kdarcacheget_redis_test_%d", i), 1, missFunc)
     if verr != nil {
       t.Fatal(verr)
     }

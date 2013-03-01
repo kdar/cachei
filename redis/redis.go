@@ -4,21 +4,22 @@ import (
   "errors"
   "fmt"
   "github.com/garyburd/redigo/redis"
-  "github.com/kdar/cache"
+  "github.com/kdar/cachei"
   //"github.com/vmihailenco/msgpack"
+
   "reflect"
 )
 
 func init() {
-  cache.Register("redis", &Source{})
+  cachei.Register("redis", &Source{})
 }
 
 type Source struct {
   conn   redis.Conn
-  config cache.DataSource
+  config cachei.DataSource
 }
 
-func (s *Source) Setup(config cache.DataSource) error {
+func (s *Source) Setup(config cachei.DataSource) error {
   s.config = config
   return s.Open()
 }
@@ -32,46 +33,16 @@ func (s *Source) Open() (err error) {
   return
 }
 
-func (s *Source) GetSetFn(key string, expires int, f cache.CacheFunc) (interface{}, error, error) {
-  // v, err := redis.Bytes(s.conn.Do("GET", key))
-  // if err != redis.ErrNil || err == nil {
-  //   var ret interface{}
-  //   err = s.config.Coder.Unmarshal(v, &ret)
-  //   if err != nil {
-  //     return nil, nil, err
-  //   }
-
-  //   return ret, nil, nil
-  // } else if err == redis.ErrNil {
-  //   if f != nil {
-  //     fret, rerr := f()
-
-  //     if fret != nil {
-  //       b, err := s.config.Coder.Marshal(fret)
-  //       if err != nil {
-  //         return nil, rerr, err
-  //       }
-
-  //       err = s.Set(key, string(b), expires)
-  //       if err != nil {
-  //         return nil, rerr, err
-  //       }
-  //     }
-
-  //     return fret, rerr, rerr
-  //   }
-  // }
-
-  // return nil, nil, err
-
+func (s *Source) GetSetFn(key string, expires int, f cachei.CacheFunc) (interface{}, error, error) {
   var i interface{}
   ferr, cerr := s.OutSetFn(key, expires, &i, f)
   return i, ferr, cerr
 }
 
-func (s *Source) OutSetFn(key string, expires int, out interface{}, f cache.CacheFunc) (error, error) {
-  if reflect.TypeOf(out).Kind() != reflect.Ptr {
-    return nil, errors.New("out must be a pointer")
+func (s *Source) OutSetFn(key string, expires int, out interface{}, f cachei.CacheFunc) (error, error) {
+  outval := reflect.ValueOf(out)
+  if outval.Kind() != reflect.Ptr {
+    return nil, errors.New("ret must be a pointer")
   }
 
   shouldSet := false
@@ -89,6 +60,8 @@ func (s *Source) OutSetFn(key string, expires int, out interface{}, f cache.Cach
   if shouldSet || err == redis.ErrNil {
     if f != nil {
       fret, rerr := f()
+      fval := reflect.ValueOf(fret)
+      outval.Elem().Set(fval)
 
       if fret != nil {
         err = s.Set(key, fret, expires)

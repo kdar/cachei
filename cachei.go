@@ -1,8 +1,8 @@
-package cache
+package cachei
 
 import (
   "fmt"
-  "github.com/kdar/cache/msgpack"
+  "github.com/kdar/cachei/msgpack"
   //"github.com/kdar/cache/json"
 )
 
