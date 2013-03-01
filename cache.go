@@ -19,7 +19,7 @@ type Coder interface {
 
 type CacheFunc func() (interface{}, error)
 
-type Cache interface {
+type Cacher interface {
   // Gets a cache value and instead of returning it, puts it into "out".
   // If no cache is found, the CacheFunc is called and put into cache.
   // It returns the CacheFunc error, and caching error
@@ -42,9 +42,9 @@ type Cache interface {
   Setup(DataSource) error
 }
 
-var wrappers = make(map[string]Cache)
+var wrappers = make(map[string]Cacher)
 
-func Register(name string, driver Cache) {
+func Register(name string, driver Cacher) {
   if name == "" {
     panic("cache: Wrapper name cannot be nil.")
   }
@@ -54,7 +54,7 @@ func Register(name string, driver Cache) {
   wrappers[name] = driver
 }
 
-func Open(name string, settings DataSource) (Cache, error) {
+func Open(name string, settings DataSource) (Cacher, error) {
   if _, ok := wrappers[name]; ok == false {
     panic(fmt.Sprintf("cache: Unknown wrapper: %s.", name))
   }
@@ -70,6 +70,6 @@ func Open(name string, settings DataSource) (Cache, error) {
   return wrappers[name], nil
 }
 
-func Wrapper(name string) Cache {
+func Wrapper(name string) Cacher {
   return wrappers[name]
 }
