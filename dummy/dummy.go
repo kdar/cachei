@@ -20,6 +20,10 @@ func (s *Source) Open() error {
   return nil
 }
 
+func (s *Source) Close() error {
+  return nil
+}
+
 func (s *Source) OutSetFn(key string, expires int, out interface{}, f cachei.CacheFunc) (error, error) {
   outval := reflect.ValueOf(out)
   if outval.Kind() != reflect.Ptr {

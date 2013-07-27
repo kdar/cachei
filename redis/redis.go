@@ -33,6 +33,10 @@ func (s *Source) Open() (err error) {
   return
 }
 
+func (s *Source) Close() error {
+  return s.conn.Close()
+}
+
 func (s *Source) GetSetFn(key string, expires int, f cachei.CacheFunc) (interface{}, error, error) {
   var i interface{}
   ferr, cerr := s.OutSetFn(key, expires, &i, f)

@@ -39,6 +39,7 @@ type Cacher interface {
   Delete(key string) (cacheErr error)
 
   Open() error
+  Close() error
   Setup(DataSource) error
 }
 
