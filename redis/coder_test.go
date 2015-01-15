@@ -5,11 +5,12 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
-	kmsgpack "github.com/kdar/cachei/msgpack"
-	"github.com/vmihailenco/msgpack"
 	"testing"
 	"time"
+
+	"github.com/garyburd/redigo/redis"
+	kmsgpack "github.com/kdar/cachei/msgpack"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 var (
