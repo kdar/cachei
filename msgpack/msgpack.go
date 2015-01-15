@@ -2,7 +2,8 @@ package msgpack
 
 import (
 	"bytes"
-	"github.com/vmihailenco/msgpack"
+
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 type Coder struct{}
